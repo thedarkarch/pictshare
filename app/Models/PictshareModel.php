@@ -400,12 +400,15 @@ class PictshareModel
         $subdirForce    = config('app.subdir_force');
 
         if ($filenameEnable && isset($_REQUEST['filename'])) {
-            $filename = trim($_REQUEST['filename']);
+            $filename = Str::sanitize(trim($_REQUEST['filename']));
 
-            // to ensure uniqueness of "hash" when using provided filenames we
-            // prepend 8-characters (calculated as CRC32 hash of the file) to
-            // the name which should avoid collisions of same name files
-            $filename = hash_file('crc32', $url) . '_' . $filename;
+            // to ensure uniqueness of "hash" when using provided filenames we prepend
+            // 8-characters calculated as CRC32 hash of the file + 8-characters
+            // calculated as CRC32 hash of subdir, filename and random string
+            // to the name which should avoid collisions of same name files
+            $filehash   = hash_file('crc32b', $url);
+            $randomhash = hash('crc32b', $subdir . $filename . Str::getRandomString());
+            $filename   = $filehash . $randomhash . '_' . $filename;
         }
 
         if ($filenameEnable && $filenameForce &&
@@ -515,6 +518,10 @@ class PictshareModel
                 return false;
             }
 
+            $query = 'UPDATE `hashes` SET `last_access_ts` = now() WHERE `sha_hash` = :hash';
+            // TODO: error handling?
+            $this->database->execute($query, $data);
+
             return [
                 $sqlResult[0]['name'],
                 $sqlResult[0]['subdir']
@@ -562,7 +569,7 @@ class PictshareModel
 
         // and save calculated sha (along with hash and subdir) into hashes
         if (config('app.hashes_store') === 'database') {
-            $query = "INSERT INTO `hashes` (`sha_hash`, `name`, `subdir`) VALUES (:hash, :name, :subdir)";
+            $query = "INSERT INTO `hashes` (`sha_hash`, `name`, `subdir`, `last_access_ts`, `archived`, `archive_location`) VALUES (:hash, :name, :subdir, now(), 0, '')";
             $data  = ['hash' => $sha, 'name' => $hash, 'subdir' => $subdir];
 
             // TODO: error handling?
@@ -929,9 +936,10 @@ class PictshareModel
         $masterDeleteCode = $this->config->get('app.master_delete_code');
 
         for ($i = 0, $j = count($urlArr); $i < $j; $i++) {
-            $el   = Str::sanitize($urlArr[$i]);
-            $orig = $el;
-            $el   = strtolower($el);
+            $orig  = $urlArr[$i];
+            $clean = Str::sanitize(trim($orig));
+            $el    = strtolower($clean);
+
             if (!$el) {
                 continue;
             }
@@ -940,15 +948,15 @@ class PictshareModel
                 $data['changecode'] = substr($el, 11);
             }
 
-            if (($isFile = File::isFile($orig)) || ($i === ($j - 1))) {
+            if (($isFile = File::isFile($clean)) || ($i === ($j - 1))) {
                 if ($el === 'robots.txt') {
                     continue;
                 }
 
-                $subdir = File::getSubDirFromHash($orig);
+                $subdir = File::getSubDirFromHash($clean);
 
                 if (!$isFile && (( $fetchScript = $this->config->get('app.fetch_script') ) !== false)) {
-                    $hashdir = ($subdir !== '' ? $subdir . '/' : '') . $orig . '/' . $orig;
+                    $hashdir = ($subdir !== '' ? $subdir . '/' : '') . $clean . '/' . $clean;
                     //$output = shell_exec($fetchScript . ' ' . $hashdir);
                     $output = exec($fetchScript . ' ' . $hashdir, $outputArr, $returnVar);
 
@@ -964,9 +972,9 @@ class PictshareModel
                     if (! isset($data['album'])) {
                         $data['album'][] = $data['hash'];
                     }
-                    $data['album'][] = $orig;
+                    $data['album'][] = $clean;
                 }
-                $data['hash']   = $orig;
+                $data['hash']   = $clean;
                 $data['subdir'] = $subdir;
             } elseif ($el == 'mp4' || $el == 'raw' || $el == 'preview' || $el == 'webm' || $el == 'ogg') {
                 $data[$el] = 1;
