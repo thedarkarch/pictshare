@@ -393,11 +393,13 @@ class PictshareModel
         $filename = null;
         $subdir   = '';
         $errors   = [];
+        $metadata = null;
 
         $filenameEnable = config('app.filename_enable');
         $filenameForce  = config('app.filename_force');
         $subdirEnable   = config('app.subdir_enable');
         $subdirForce    = config('app.subdir_force');
+        $hashesStore    = config('app.hashes_store');
 
         if ($filenameEnable && isset($_REQUEST['filename'])) {
             $filename = Str::sanitize(trim($_REQUEST['filename']));
@@ -427,6 +429,14 @@ class PictshareModel
             $errors[] = 'missing subdir parameter';
         }
 
+        if ($hashesStore === 'database' && isset($_REQUEST['metadata'])) {
+            if (!Utils::isValidJson($_REQUEST['metadata'])) {
+                $errors[] = 'provided metadata is not a valid JSON string';
+            } else {
+                $metadata = $_REQUEST['metadata'];
+            }
+        }
+
         if (!empty($errors)) {
             return ['status' => 'ERR', 'reason' => $errors];
         }
@@ -444,7 +454,7 @@ class PictshareModel
                 $hash = File::getNewHash($type);
             }
             $hashdir = $subdir . '/' . $hash;
-            $this->saveSHAOfFile($url, $hash, $subdir, $filename);
+            $this->saveSHAOfFile($url, $hash, $subdir, $filename, $metadata);
         }
 
         if ($dupl) {
@@ -558,8 +568,9 @@ class PictshareModel
      * @param string      $hash
      * @param string      $subdir
      * @param string|null $filename
+     * @param string|null $metadata
      */
-    public function saveSHAOfFile($filepath, $hash, $subdir = '', $filename = null)
+    public function saveSHAOfFile($filepath, $hash, $subdir = '', $filename = null, $metadata = null)
     {
         // calculate sha of file content (and filename if given)
         $sha = sha1_file($filepath);
@@ -569,8 +580,24 @@ class PictshareModel
 
         // and save calculated sha (along with hash and subdir) into hashes
         if (config('app.hashes_store') === 'database') {
-            $query = "INSERT INTO `hashes` (`sha_hash`, `name`, `subdir`, `last_access_ts`, `archived`, `archive_location`) VALUES (:hash, :name, :subdir, now(), 0, '')";
-            $data  = ['hash' => $sha, 'name' => $hash, 'subdir' => $subdir];
+            $query = "INSERT INTO `hashes` (
+    `sha_hash`,
+    `name`,
+    `subdir`,
+    `last_access_ts`,
+    `archived`,
+    `archive_location`,
+    `metadata`
+) VALUES (
+    :hash,
+    :name,
+    :subdir,
+    now(),
+    0,
+    '',
+    :metadata
+)";
+            $data  = ['hash' => $sha, 'name' => $hash, 'subdir' => $subdir, 'metadata' => $metadata];
 
             // TODO: error handling?
             $this->database->execute($query, $data);

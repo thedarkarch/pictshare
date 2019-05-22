@@ -195,6 +195,11 @@ By default PictShare will store images under randomly generated hashkeys. If you
 
 Please not that even if you specify a name for the file it will still get an 8-character hash prepended to it. The reason is due to potential collision when trying to store files under same name into different subdirectories (as subdirectory info is not part of the hashkey).
 
+### Metadata
+
+If hashes store is set to ```database``` you can choose to provide a valid JSON string as part of ```metadata``` request parameter and this will get stored into the corresponding table column.
+
+
 ## Restriction settings
 In your ```.env``` or ```config.inc.php``` there are couple of values to be set: ```UPLOAD_CODE```, ```IMAGE_CHANGE_CODE```, ```ADDITIONAL_FILE_TYPES```, ```SUBDIR_ENABLE``` and ```FILENAME_ENABLE```
 
@@ -296,6 +301,7 @@ CREATE TABLE `hashes` (
   `last_access_ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `archived` tinyint(1) NOT NULL DEFAULT '0',
   `archive_location` varchar(255) NOT NULL,
+  `metadata` json DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `hash_UNIQUE` (`sha_hash`),
   UNIQUE KEY `name_UNIQUE` (`name`),
