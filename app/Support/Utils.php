@@ -100,4 +100,16 @@ class Utils
         }
         $array = $ret;
     }
+
+    /**
+     * Checks if provided value is a valid JSON string.
+     *
+     * @param string $value
+     *
+     * @return bool
+     */
+    public static function isValidJson($value)
+    {
+        return is_string($value) && is_array(json_decode($value, true)) && (json_last_error() === JSON_ERROR_NONE);
+    }
 }
