@@ -161,7 +161,7 @@ class View
         switch ($type) {
             case 'jpg':
                 header("Content-type: image/jpeg");
-                $im = imagecreatefromjpeg($full_path);
+                $im = \imagecreatefromjpeg($full_path);
                 if (!$cached) {
                     if ($this->pictshareModel->changeCodeExists($changecode)) {
                         $this->imageTransformer->transform($im, $data);
