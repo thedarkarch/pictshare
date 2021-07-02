@@ -42,8 +42,6 @@ class IndexController
      */
     public function processUrl($url)
     {
-        Utils::removeMagicQuotes();
-
         $data = $this->pictshareModel->urlToData($url);
 
         if (isset($data['error_message'])) {

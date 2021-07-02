@@ -69,18 +69,6 @@ class Utils
     }
 
     /**
-     * @return void
-     */
-    public static function removeMagicQuotes()
-    {
-        if (get_magic_quotes_gpc()) {
-            $_GET    = self::stripSlashesDeep($_GET);
-            $_POST   = self::stripSlashesDeep($_POST);
-            $_COOKIE = self::stripSlashesDeep($_COOKIE);
-        }
-    }
-
-    /**
      * @param array $array
      * @param string $key
      *

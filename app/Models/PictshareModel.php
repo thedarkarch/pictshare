@@ -335,23 +335,17 @@ class PictshareModel
     {
         switch ($type) {
             case 'image/png':
-                return 'png';
             case 'image/x-png':
-                return 'png';
             case 'x-png':
-                return 'png';
             case 'png':
                 return 'png';
 
             case 'image/jpeg':
-                return 'jpg';
             case 'jpeg':
-                return 'jpg';
             case 'pjpeg':
                 return 'jpg';
 
             case 'image/gif':
-                return 'gif';
             case 'gif':
                 return 'gif';
 
@@ -886,7 +880,6 @@ class PictshareModel
                                             <source src="' . $rawurl . '" type="video/mp4">
                                           </video>'
                 ];
-                break;
 
             case 'xml':
                 break;
