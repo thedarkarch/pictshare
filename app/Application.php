@@ -142,8 +142,9 @@ class Application implements ContainerAwareInterface
         if ($forceDomain = $this->config->get('app.force_domain')) {
             $this->domainPath = $forceDomain;
         } else {
-            $this->domainPath = (( isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']) ? 'https' : 'http') .
-                                '://' . $_SERVER['HTTP_HOST'];
+            $this->domainPath = ((( isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']) ||
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) ?
+                    'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
         }
     }
 
